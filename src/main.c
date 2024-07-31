@@ -5,25 +5,35 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t u8;
+typedef int32_t i32;
+typedef int16_t i16;
+typedef int8_t i8;
+
 const char *TITLE = "Yessir x3";
 
-const uint32_t WIDTH = 640;
-const uint32_t HEIGHT = 480;
+const u32 WIDTH = 640;
+const u32 HEIGHT = 480;
 
 typedef struct App {
     GLFWwindow *window;
+    VkInstance instance;
 } App;
 
 void initWindow(App *pApp);
-void initVulkan(void);
+void initVulkan(App *pApp);
 void mainLoop(App *pApp);
 void cleanup(App *pApp);
+
+void createInstance(App *pApp);
 
 int main(void) {
     App app = {0};
 
     initWindow(&app);
-    initVulkan();
+    initVulkan(&app);
     mainLoop(&app);
     cleanup(&app);
 
@@ -39,14 +49,48 @@ void initWindow(App *pApp) {
     pApp->window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, NULL, NULL);
 }
 
-void initVulkan(void) {}
+void initVulkan(App *pApp) {
+    createInstance(pApp);
+}
+
 void mainLoop(App *pApp) {
     while (!glfwWindowShouldClose(pApp->window)) {
         glfwPollEvents();
     }
 }
 void cleanup(App *pApp) {
+    vkDestroyInstance(pApp->instance, NULL);
     glfwDestroyWindow(pApp->window);
-    
     glfwTerminate();
+}
+
+void createInstance(App *pApp) {
+    VkApplicationInfo appInfo = {
+        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName = "mwah mwah mwah mwahahahah",
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+        .pEngineName = "No Engine",
+        .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+        .apiVersion = VK_API_VERSION_1_0,
+        .pNext = NULL
+    };
+
+    u32 glfwExtensionCount = 0;
+    const char** glfwExtensions;
+
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    VkInstanceCreateInfo createInfo = {
+        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pApplicationInfo = &appInfo,
+        .enabledExtensionCount = glfwExtensionCount,
+        .ppEnabledExtensionNames = glfwExtensions,
+    };
+
+    createInfo.enabledLayerCount = 0;
+
+    if (vkCreateInstance(&createInfo, NULL, &pApp->instance) != VK_SUCCESS) {
+        printf("Failed to initiate Vulkan instance\n");
+        exit(1);
+    }
 }
