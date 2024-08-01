@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -12,8 +13,8 @@ typedef int32_t i32;
 typedef int16_t i16;
 typedef int8_t i8;
 
-const char *TITLE = "Yessir x3";
 
+const char *TITLE = "Yessir x3";
 const u32 WIDTH = 640;
 const u32 HEIGHT = 480;
 
@@ -64,6 +65,19 @@ void cleanup(App *pApp) {
     glfwTerminate();
 }
 
+bool verifyExtensionSupport(u32 extensionCount, VkExtensionProperties *extensions, u32 glfwExtensionCount, const char** glfwExtensions) {
+    u32 foundExtensions = 0;
+    for (int i = 0; i < glfwExtensionCount; i++) {
+        for (int j = 0; j < extensionCount; j++) {
+            if (strcmp(extensions[j].extensionName, glfwExtensions[i]) == 0) {
+                foundExtensions++;
+            }
+        }
+    }
+
+    return foundExtensions == glfwExtensionCount;
+}
+
 void createInstance(App *pApp) {
     VkApplicationInfo appInfo = {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -91,6 +105,17 @@ void createInstance(App *pApp) {
 
     if (vkCreateInstance(&createInfo, NULL, &pApp->instance) != VK_SUCCESS) {
         printf("Failed to initiate Vulkan instance\n");
+        exit(1);
+    }
+
+    u32 extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
+    
+    VkExtensionProperties *extensions = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * extensionCount);
+    vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, extensions);
+
+    if (!verifyExtensionSupport(extensionCount, extensions, glfwExtensionCount, glfwExtensions)) {
+        printf("Missing extensions support!\n");
         exit(1);
     }
 }
